@@ -1,0 +1,588 @@
+{
+  "version": "0.1.0",
+  "name": "tmp",
+  "docs": [
+    "* Working dex now:\n * 1. Orca\n * 2. Saber\n * 3. Raydium\n * 4. meteora\n * 5. lifinity\n * 6. Serum",
+    "* Work plan\n * 1. start solana localnet\n * 2. deploy tmp on localnet\n * 3. run start and stop trade from client on localnet\n * 4. create 2 fake mint on localnet\n * 5. deploy and init orca pool on localnet\n * 6. test trade from client on localnet\n * 7. implement raydium, saber, meteora in tmp\n * 8. implement get transaction method for raydium, saber, meteora on client\n * 9. test raydium, saber, meteora on localnet\n * 10. deploy tmp on mainnet\n * 11. test trade on mainnet\n * 12. implement raydium, saber, meteora local logic\n * 13. implement dfs"
+  ],
+  "instructions": [
+    {
+      "name": "initProgram",
+      "accounts": [
+        {
+          "name": "swapState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "startSwap",
+      "accounts": [
+        {
+          "name": "src",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "swapState",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "swapInput",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "profitOrRevert",
+      "accounts": [
+        {
+          "name": "src",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "swapState",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initOpenOrder",
+      "docs": [
+        "Convenience API to initialize an open orders account on the Serum DEX."
+      ],
+      "accounts": [
+        {
+          "name": "openOrders",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "market",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "dexProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "raydiumSwap",
+      "accounts": [
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "ammConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "poolState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userSrc",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userDst",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "inputVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "outputVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "observationState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tickArray",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "raydiumSwapProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "swapState",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "aToB",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "orcaSwap",
+      "accounts": [
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "whirlpool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArray0",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArray1",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArray2",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "oracle",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "orcaSwapProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "swapState",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "aToB",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "saberSwap",
+      "accounts": [
+        {
+          "name": "poolAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "userTransferAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "userSrc",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "poolSrc",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "poolDst",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userDst",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feeDst",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "saberSwapProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "swapState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "serumSwap",
+      "accounts": [
+        {
+          "name": "market",
+          "accounts": [
+            {
+              "name": "market",
+              "isMut": true,
+              "isSigner": false
+            },
+            {
+              "name": "openOrders",
+              "isMut": true,
+              "isSigner": false
+            },
+            {
+              "name": "requestQueue",
+              "isMut": true,
+              "isSigner": false
+            },
+            {
+              "name": "eventQueue",
+              "isMut": true,
+              "isSigner": false
+            },
+            {
+              "name": "bids",
+              "isMut": true,
+              "isSigner": false
+            },
+            {
+              "name": "asks",
+              "isMut": true,
+              "isSigner": false
+            },
+            {
+              "name": "orderPayerTokenAccount",
+              "isMut": true,
+              "isSigner": false
+            },
+            {
+              "name": "coinVault",
+              "isMut": true,
+              "isSigner": false
+            },
+            {
+              "name": "pcVault",
+              "isMut": true,
+              "isSigner": false
+            },
+            {
+              "name": "vaultSigner",
+              "isMut": false,
+              "isSigner": false
+            },
+            {
+              "name": "coinWallet",
+              "isMut": true,
+              "isSigner": false
+            }
+          ]
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "pcWallet",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "dexProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "swapState",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "side",
+          "type": {
+            "defined": "Side"
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "SwapState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "startBalance",
+            "type": "u64"
+          },
+          {
+            "name": "swapInput",
+            "type": "u64"
+          },
+          {
+            "name": "isValid",
+            "type": "bool"
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "SwapData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "instruction",
+            "type": "u8"
+          },
+          {
+            "name": "amountIn",
+            "type": "u64"
+          },
+          {
+            "name": "minimumAmountOut",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ExchangeRate",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "rate",
+            "type": "u64"
+          },
+          {
+            "name": "fromDecimals",
+            "type": "u8"
+          },
+          {
+            "name": "quoteDecimals",
+            "type": "u8"
+          },
+          {
+            "name": "strict",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Side",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Bid"
+          },
+          {
+            "name": "Ask"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SerumErrorCode",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "SwapTokensCannotMatch"
+          },
+          {
+            "name": "SlippageExceeded"
+          },
+          {
+            "name": "ZeroSwap"
+          }
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "name": "DidSwap",
+      "fields": [
+        {
+          "name": "givenAmount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "minExchangeRate",
+          "type": {
+            "defined": "ExchangeRate"
+          },
+          "index": false
+        },
+        {
+          "name": "fromAmount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "toAmount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "quoteAmount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "spillAmount",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "fromMint",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "toMint",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "quoteMint",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "authority",
+          "type": "publicKey",
+          "index": false
+        }
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NoProfit",
+      "msg": "No Profit at the end. Reverting..."
+    },
+    {
+      "code": 6001,
+      "name": "InvalidState",
+      "msg": "Trying to swap when Information is invalid."
+    },
+    {
+      "code": 6002,
+      "name": "NotEnoughFunds",
+      "msg": "not enough funds: amount_in > src_balance."
+    }
+  ]
+}

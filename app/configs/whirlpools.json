@@ -1,0 +1,37 @@
+{
+    "programAddress": "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+    "pools": [
+        {
+            "pool": "4fuUiYxTQ6QCrdSq9ouBYcTM7bqSwYTSyLueGZLTy4T4",
+            "tokenA": "USDC",
+            "tokenB": "USDT",
+            "tokenVaultA": "4oY1eVHJrt7ywuFoQnAZwto4qcQip1QhYMAhD11PU4QL",
+            "tokenVaultB": "4dSG9tKHZR4CAictyEnH9XuGZyKapodWXq5xyg7uFwE9",
+            "oracle": "4fuUiYxTQ6QCrdSq9ouBYcTM7bqSwYTSyLueGZLTy4T4"
+        },
+        {
+            "pool": "7qbRF6YsyGuLUVs6Y1q64bdVrfe4ZcUUz1JRdoVNUJnm",
+            "tokenA": "SOL",
+            "tokenB": "USDC",
+            "tokenVaultA": "9RfZwn2Prux6QesG1Noo4HzMEBv3rPndJ2bN2Wwd6a7p",
+            "tokenVaultB": "BVNo8ftg2LkkssnWT4ZWdtoFaevnfD6ExYeramwM27pe",
+            "oracle": "6vK8gSiRHSnZzAa5JsvBF2ej1LrxpRX21Y185CzP4PeA"
+        },
+        {
+            "pool": "9r5v3ZTSZaRkRANZ5PSxh32ry4udrvtYmxypQG3XJbqN",
+            "tokenA": "UXP",
+            "tokenB": "USDC",
+            "tokenVaultA": "AVCVCaEvr2HjgrJt6r4SSrTPktcLpYwQjxhDdhcWskjD",
+            "tokenVaultB": "Ct4LVGgnR1p5aV2Xq3yWowLitKtsEyE9L7MVAH557J9q",
+            "oracle": "9r5v3ZTSZaRkRANZ5PSxh32ry4udrvtYmxypQG3XJbqN"
+        },
+        {
+            "pool": "GLNvG5Ly4cK512oQeJqnwLftwfoPZ4skyDwZWzxorYQ9",
+            "tokenA": "UXD",
+            "tokenB": "USDC",
+            "tokenVaultA": "AzrRewYSJPSMFxf5WxSoTWw1mxqaPQtVgRmsBaPgQZ7B",
+            "tokenVaultB": "2i4Dew7vLcTPDHTQF3Wska1CrsWaqNj99xuDvxJVvM8x",
+            "oracle": "C5Fhtw7VLawwt2ZM4woBXGh5QqRWRs9Dcvdx4V543CNu"
+        }
+    ]
+}
