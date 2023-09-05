@@ -83,6 +83,7 @@ export type PoolSimulationParams = {
   tokenB: string;
   watchedPoolAccounts: Record<string, AutoUpdateAccount>;
   txPoolAccounts: Record<string, PublicKey>;
+  miscData?: Record<string, any>;
 };
 
 export class PoolSimulation {

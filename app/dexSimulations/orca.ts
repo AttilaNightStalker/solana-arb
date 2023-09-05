@@ -142,7 +142,11 @@ export class OrcaDexSimulation extends DexSimulation {
           (poolSimulation.pool as AutoUpdateAccountWithData<WhirlpoolData>).get(),
         );
         const promiseList = [];
-        for (const index of [tickArrayIndexFunc(0), tickArrayIndexFunc(1)]) {
+        for (const index of [
+          tickArrayIndexFunc(-1),
+          tickArrayIndexFunc(0),
+          tickArrayIndexFunc(1),
+        ]) {
           const tickArrayKey = tickArrayKeyByIndex(index);
           if (!poolSimulation.watchedPoolAccounts[tickArrayKey]) {
             poolSimulation.watchedPoolAccounts[tickArrayKey] =
@@ -159,10 +163,14 @@ export class OrcaDexSimulation extends DexSimulation {
           }
         }
 
-        for (const index of [tickArrayIndexFunc(-1), tickArrayIndexFunc(2)]) {
+        for (const index of [tickArrayIndexFunc(-2), tickArrayIndexFunc(2)]) {
           const tickArrayKey = tickArrayKeyByIndex(index);
           if (!!poolSimulation.watchedPoolAccounts[tickArrayKey]) {
-            promiseList.push(poolSimulation.watchedPoolAccounts[tickArrayKey].stop());
+            promiseList.push(
+              poolSimulation.watchedPoolAccounts[tickArrayKey].stop().then(() => {
+                poolSimulation.watchedPoolAccounts[tickArrayKey] = null;
+              }),
+            );
           }
         }
         await Promise.all(promiseList);
@@ -195,11 +203,23 @@ export class OrcaDexSimulation extends DexSimulation {
     );
 
     const tickArrayKey = tickArrayKeyByIndex(tickArrayIndexFunc(0));
-    const tickArrays = [
-      watchedPoolAccounts[tickArrayKey],
-      watchedPoolAccounts[tickArrayKey],
-      watchedPoolAccounts[tickArrayKey],
-    ].map(
+    const tickArrays = (
+      aToB
+        ? [
+            watchedPoolAccounts[tickArrayKey],
+            watchedPoolAccounts[tickArrayKeyByIndex(tickArrayIndexFunc(-1))] ||
+              watchedPoolAccounts[tickArrayKey],
+            watchedPoolAccounts[tickArrayKeyByIndex(tickArrayIndexFunc(-1))] ||
+              watchedPoolAccounts[tickArrayKey],
+          ]
+        : [
+            watchedPoolAccounts[tickArrayKey],
+            watchedPoolAccounts[tickArrayKeyByIndex(tickArrayIndexFunc(1))] ||
+              watchedPoolAccounts[tickArrayKey],
+            watchedPoolAccounts[tickArrayKeyByIndex(tickArrayIndexFunc(1))] ||
+              watchedPoolAccounts[tickArrayKey],
+          ]
+    ).map(
       (tickArrayAccount: AutoUpdateAccountWithData<TickArrayData>): TickArray => ({
         data: tickArrayAccount.get(),
         address: tickArrayAccount.address,

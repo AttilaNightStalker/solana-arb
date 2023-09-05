@@ -1,6 +1,6 @@
 import {
-  AmmV3ConfigInfo,
-  AmmV3PoolInfo,
+  ClmmConfigInfo,
+  ClmmPoolInfo,
   MAX_SQRT_PRICE_X64,
   MIN_SQRT_PRICE_X64,
   PoolUtils,
@@ -42,7 +42,7 @@ interface RaydiumDexConfig {
 }
 
 export class RaydiumDexSimulation extends DexSimulation {
-  static getTickArrayIndicesFunc(poolInfo: AmmV3PoolInfo) {
+  static getTickArrayIndicesFunc(poolInfo: ClmmPoolInfo) {
     const { tickSpacing, tickCurrent } = poolInfo;
     const multiplier = tickSpacing * TICK_ARRAY_SIZE;
     const curStartIndex = Math.floor(tickCurrent / multiplier) * multiplier;
@@ -53,7 +53,7 @@ export class RaydiumDexSimulation extends DexSimulation {
 
   static getRaydiumAmmV3TickArrays(
     programId: PublicKey,
-    poolInfoAccountWithData: AutoUpdateAccountWithData<AmmV3PoolInfo>,
+    poolInfoAccountWithData: AutoUpdateAccountWithData<ClmmPoolInfo>,
     aToB: boolean,
   ): TickArrayPDASet {
     const tickArrayStartIndexFunc = this.getTickArrayIndicesFunc(poolInfoAccountWithData.get());
@@ -104,7 +104,7 @@ export class RaydiumDexSimulation extends DexSimulation {
     };
   }
 
-  static parsedPoolStateToAmmV3PoolInfo(parsedPoolState: any, programId: PublicKey): AmmV3PoolInfo {
+  static parsedPoolStateToClmmPoolInfo(parsedPoolState: any, programId: PublicKey): ClmmPoolInfo {
     const tokenMintA = parsedPoolState?.tokenMint0 as PublicKey;
     const tokenMintB = parsedPoolState?.tokenMint1 as PublicKey;
     const tokenVaultA = parsedPoolState?.tokenVault0 as PublicKey;
@@ -114,7 +114,7 @@ export class RaydiumDexSimulation extends DexSimulation {
       throw Error(`invalid parsedPoolState ${parsedPoolState}`);
     }
 
-    const castedPoolState = parsedPoolState as AmmV3PoolInfo;
+    const castedPoolState = parsedPoolState as ClmmPoolInfo;
     const mintToTokenMap = TokenInfoMap.getMintMap();
     const mintA = {
       programId: TOKEN_PROGRAM_ID,
@@ -145,7 +145,7 @@ export class RaydiumDexSimulation extends DexSimulation {
     const raydiumProgram = getProgram(RaydiumAmmV3 as Idl, programPubkey);
 
     const poolInfoDecoder = (dataBuffer: Buffer) =>
-      RaydiumDexSimulation.parsedPoolStateToAmmV3PoolInfo(
+      RaydiumDexSimulation.parsedPoolStateToClmmPoolInfo(
         raydiumProgram.account.poolState.coder.accounts.decode("PoolState", dataBuffer),
         programPubkey,
       );
@@ -158,7 +158,7 @@ export class RaydiumDexSimulation extends DexSimulation {
     for (const poolConfig of raydiumDexConfig.pools) {
       const poolSimulation: PoolSimulationParams = {
         programId: programPubkey,
-        pool: new AutoUpdateAccountWithData<AmmV3PoolInfo>(
+        pool: new AutoUpdateAccountWithData<ClmmPoolInfo>(
           new PublicKey(poolConfig.poolState),
           this.connection,
           poolInfoDecoder,
@@ -166,7 +166,7 @@ export class RaydiumDexSimulation extends DexSimulation {
         tokenA: poolConfig.tokenA,
         tokenB: poolConfig.tokenB,
         watchedPoolAccounts: {
-          ammConfig: new AutoUpdateAccountWithData<AmmV3ConfigInfo>(
+          ammConfig: new AutoUpdateAccountWithData<ClmmConfigInfo>(
             new PublicKey(poolConfig.ammConfig),
             this.connection,
             (dataBuffer: Buffer) =>
@@ -184,7 +184,7 @@ export class RaydiumDexSimulation extends DexSimulation {
       const connection = this.connection;
       poolSimulation.pool.registerOnUpdate(async () => {
         const tickArrayIndexFunc = RaydiumDexSimulation.getTickArrayIndicesFunc(
-          (poolSimulation.pool as AutoUpdateAccountWithData<AmmV3PoolInfo>).get(),
+          (poolSimulation.pool as AutoUpdateAccountWithData<ClmmPoolInfo>).get(),
         );
 
         const promiseList = [];
@@ -220,7 +220,7 @@ export class RaydiumDexSimulation extends DexSimulation {
 
       poolSimulationParamsList.push(poolSimulation);
     }
-    PoolUtils.getOutputAmountAndRemainAccounts;
+
     return {
       programId: programPubkey,
       poolSimulationParamsList,
@@ -236,7 +236,7 @@ export class RaydiumDexSimulation extends DexSimulation {
     const inputToken = aToB
       ? TokenInfoMap.getSymbolMap()[tokenA]
       : TokenInfoMap.getSymbolMap()[tokenB];
-    const poolInfo = (pool as AutoUpdateAccountWithData<AmmV3PoolInfo>).get();
+    const poolInfo = (pool as AutoUpdateAccountWithData<ClmmPoolInfo>).get();
 
     const tickArrayIndexFunc = RaydiumDexSimulation.getTickArrayIndicesFunc(poolInfo);
     const currentIndex = tickArrayIndexFunc(0);
@@ -254,7 +254,9 @@ export class RaydiumDexSimulation extends DexSimulation {
     tickArrayCache[currentIndex] = curTickArrayAutoUpdateAccount.get();
     tickArrayCache[nextIndex] = nextTickArrayAutoUpdateAccount.get();
 
-    const ammConfig: AmmV3ConfigInfo = (watchedPoolAccounts["ammConfig"] as AutoUpdateAccountWithData<AmmV3ConfigInfo>).get();
+    const ammConfig: ClmmConfigInfo = (
+      watchedPoolAccounts["ammConfig"] as AutoUpdateAccountWithData<ClmmConfigInfo>
+    ).get();
     poolInfo.id = poolSimulationParams.pool.address;
     poolInfo.ammConfig = ammConfig;
 
@@ -283,7 +285,7 @@ export class RaydiumDexSimulation extends DexSimulation {
       : [txPoolAccounts["tokenBVault"], txPoolAccounts["tokenAVault"]];
 
     const tickArrayIndexFunc = RaydiumDexSimulation.getTickArrayIndicesFunc(
-      (pool as AutoUpdateAccountWithData<AmmV3PoolInfo>).get(),
+      (pool as AutoUpdateAccountWithData<ClmmPoolInfo>).get(),
     );
     const curTickArrayIndex = tickArrayIndexFunc(0);
     const nextTickArrayIndex = aToB ? tickArrayIndexFunc(-1) : tickArrayIndexFunc(1);
