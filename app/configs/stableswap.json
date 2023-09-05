@@ -1,0 +1,29 @@
+{
+    "programAddress": "SSwpkEEcbUqx4vtoEByFjSkhKdCT862DNVb52nZg1UZ",
+    "pools": [
+        {
+            "tokenA": "USDC",
+            "tokenB": "USDT",
+            "swapAccount": "YAkoNb6HKmSxQN9L8hiBE5tPJRsniSSMzND1boHmZxe",
+            "authority": "YAkoNb6HKmSxQN9L8hiBE5tPJRsniSSMzND1boHmZxe",
+            "poolTokenA": "CfWX7o2TswwbxusJ4hCaPobu2jLCb1hfXuXJQjVq3jQF",
+            "poolTokenB": "EnTrdMMpdhugeH6Ban6gYZWXughWxKtVGfCwFn78ZmY3",
+            "adminTokenA": "XZuQG7CQrAA6y6tHM9CLrDjDUWwuUU2SBoV7pLaGDQT",
+            "adminTokenB": "63aJYYuZddSnCGyE8FNrCVQWnXhjh6CQSRwcDeSMhdVC",
+            "lpMint": "2poo1w1DL6yd2WNTCnNTzDqkC6MBXq7axo77P16yrBuf",
+            "lpDecimals": 6
+        },
+        {
+            "tokenA": "USDC",
+            "tokenB": "UXD",
+            "swapAccount": "KEN5P7p3asnb23Sw6yAmJRGvijfAzso3RqfyLAQhznt",
+            "authority": "HaNqpJUQeH2t6SB3tDJAtKV52fJM9rV1mGZrRrqMRZo1",
+            "poolTokenA": "CwQDG1MWunn9cLNwcZLd8YBacweSR7ARo32w4mLua1Yr",
+            "poolTokenB": "9zj4aX38Uxf3h6AUjS4EipWS8mwbEofasHAf3a1uKGds",
+            "adminTokenA": "5BEZbHQMLGyLsVTG77UoJqNsuF7PJUfeNmxwDfe6v4jy",
+            "adminTokenB": "3czPMjjuHNb1yAahyQVmGiN7AQAGaws8xpFcSskCj2oe",
+            "lpMint": "UXDgmqLd1roNYkC4TmJzok61qcM9oKs5foDADiFoCiJ",
+            "lpDecimals": 6
+        }
+    ]
+}
