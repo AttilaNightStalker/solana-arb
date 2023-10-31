@@ -14,7 +14,7 @@ import {
   decodeSwap,
 } from "@saberhq/stableswap-sdk";
 import { BN } from "@coral-xyz/anchor";
-import { TransactionInstruction } from "@solana/web3.js";
+import { Connection, TransactionInstruction } from "@solana/web3.js";
 import { WalletWithTokenMap } from "../utils";
 
 import {
@@ -25,6 +25,7 @@ import {
 } from "@saberhq/token-utils";
 import { ArbProgram, ArbSwapStatePDA, TokenInfoMap } from "../singletons";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { ConnectionPool } from "../connectionPool";
 
 interface SaberStableswapConfig {
   tokenA: string;
@@ -45,6 +46,7 @@ interface SaberDexConfig {
 }
 
 export class SaberDexSimulation extends DexSimulation {
+  readonly name: string = "saber";
   static makeExchangeInfo(
     tokenAData: TokenAccountData,
     tokenBData: TokenAccountData,
@@ -75,7 +77,7 @@ export class SaberDexSimulation extends DexSimulation {
           ),
         },
       ],
-    }
+    };
   }
 
   protected loadAndInitializeDexConfig(dexConfigPath: PathLike): parsedDexConfig {
@@ -90,7 +92,7 @@ export class SaberDexSimulation extends DexSimulation {
         programId: programPubkey,
         pool: new AutoUpdateAccountWithData<StableSwapState>(
           new PublicKey(poolConfig.swapAccount),
-          this.connection,
+          this.connectionPool,
           decodeSwap,
         ),
         tokenA: poolConfig.tokenA,
@@ -98,12 +100,12 @@ export class SaberDexSimulation extends DexSimulation {
         watchedPoolAccounts: {
           reserveA: new AutoUpdateAccountWithData<TokenAccountData>(
             new PublicKey(poolConfig.poolTokenA),
-            this.connection,
+            this.connectionPool,
             deserializeAccount,
           ),
           reserveB: new AutoUpdateAccountWithData<TokenAccountData>(
             new PublicKey(poolConfig.poolTokenB),
-            this.connection,
+            this.connectionPool,
             deserializeAccount,
           ),
         },
@@ -127,7 +129,16 @@ export class SaberDexSimulation extends DexSimulation {
     };
   }
 
-  protected poolSimuluationGetAmountOut(
+  public async preCalculationUpdate(
+    _connectionPool: ConnectionPool,
+    poolSimulationParams: PoolSimulationParams,
+    _aToB: boolean,
+  ): Promise<PoolSimulationParams> {
+    // no prefetch for saber
+    return poolSimulationParams;
+  }
+
+  private static poolSimuluationGetAmountOutInternal(
     poolSimulationParams: PoolSimulationParams,
     inAmount: BN,
     aToB: boolean,
@@ -135,7 +146,7 @@ export class SaberDexSimulation extends DexSimulation {
     const tokenSymbolMap = TokenInfoMap.getSymbolMap();
     const tokenA = tokenSymbolMap[poolSimulationParams.tokenA];
     const tokenB = tokenSymbolMap[poolSimulationParams.tokenB];
-    const { watchedPoolAccounts, pool, miscData } = poolSimulationParams;
+    const { watchedPoolAccounts, pool } = poolSimulationParams;
     const tokenAData = (
       watchedPoolAccounts.reserveA as AutoUpdateAccountWithData<TokenAccountData>
     ).get();
@@ -159,24 +170,40 @@ export class SaberDexSimulation extends DexSimulation {
     return new BN(outputAmount.toU64());
   }
 
+  protected poolSimuluationGetAmountOut(
+    poolSimulationParams: PoolSimulationParams,
+    inAmount: BN,
+    aToB: boolean,
+  ): BN {
+    return DexSimulation.outZeroOnFailure(
+      poolSimulationParams,
+      inAmount,
+      aToB,
+      SaberDexSimulation.poolSimuluationGetAmountOutInternal,
+    );
+  }
+
   protected poolSimulationArbInstruction(
     poolSimulationParams: PoolSimulationParams,
     aToB: boolean,
     payer: WalletWithTokenMap,
   ): Promise<TransactionInstruction> {
     const arbProgram = ArbProgram.getInstance();
-    const { pool, txPoolAccounts, watchedPoolAccounts, tokenA, tokenB, programId } = poolSimulationParams;
+    const { pool, txPoolAccounts, watchedPoolAccounts, tokenA, tokenB, programId } =
+      poolSimulationParams;
     const [userSrc, userDst] = aToB
       ? [payer.getTokenAccountPubkey(tokenA), payer.getTokenAccountPubkey(tokenB)]
       : [payer.getTokenAccountPubkey(tokenB), payer.getTokenAccountPubkey(tokenA)];
     const [poolSrc, poolDst] = aToB
-      ? [watchedPoolAccounts.poolTokenA.address, watchedPoolAccounts.poolTokenB.address]
-      : [watchedPoolAccounts.poolTokenB.address, watchedPoolAccounts.poolTokenA.address];
+      ? [watchedPoolAccounts.reserveA.address, watchedPoolAccounts.reserveB.address]
+      : [watchedPoolAccounts.reserveB.address, watchedPoolAccounts.reserveA.address];
 
-    const feeDst = aToB ? txPoolAccounts.adminFeeAccountB : txPoolAccounts.adminFeeAccountA;
-
-    return arbProgram.methods.saberSwap().accounts(
-      {
+    const feeDst = aToB ? txPoolAccounts.adminTokenB : txPoolAccounts.adminTokenA;
+    console.log({ feeDst });
+    return arbProgram.methods
+      .saberSwap()
+      .accounts({
+        saberSwapProgram: poolSimulationParams.programId,
         poolAccount: pool.address,
         authority: txPoolAccounts.authority,
         userTransferAuthority: payer.publicKey,
@@ -188,7 +215,7 @@ export class SaberDexSimulation extends DexSimulation {
         programId,
         swapState: ArbSwapStatePDA.getInstance(),
         tokenProgram: TOKEN_PROGRAM_ID,
-      }
-    ).instruction()
+      })
+      .instruction();
   }
 }

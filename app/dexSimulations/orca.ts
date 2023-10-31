@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { PublicKey, TransactionInstruction } from "@solana/web3.js";
+import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import {
   AutoUpdateAccountWithData,
   DexSimulation,
@@ -14,7 +14,7 @@ import {
   WhirlpoolData,
   swapQuoteWithParams,
 } from "@orca-so/whirlpools-sdk";
-import WhirlpoolIdl from "../idl/whirlpool.json";
+import WhirlpoolIdl from "../../idl/whirlpool.json";
 import { Idl } from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
 import Decimal from "decimal.js";
@@ -22,6 +22,7 @@ import { WalletWithTokenMap, getProgram, tickArrayKeyByIndex } from "../utils";
 import { ArbProgram, ArbSwapStatePDA } from "../singletons";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { TickArrayPDASet } from "../types";
+import { ConnectionPool } from "../connectionPool";
 
 interface OrcaWhirpoolConfig {
   pool: string;
@@ -38,6 +39,8 @@ interface OrcaDexConfig {
 }
 
 export class OrcaDexSimulation extends DexSimulation {
+  readonly name = "orca";
+
   static getTickArrayIndicesFunc(whirlpoolData: WhirlpoolData, aToB: boolean = true) {
     const { tickCurrentIndex, tickSpacing } = whirlpoolData;
     const tickArrayTargetIndex = aToB ? tickCurrentIndex : tickCurrentIndex + tickSpacing;
@@ -115,15 +118,15 @@ export class OrcaDexSimulation extends DexSimulation {
 
     const whirlpoolDecoder = (dataBuffer: Buffer) =>
       orcaProgram.account.whirlpool.coder.accounts.decode("Whirlpool", dataBuffer);
-    const tickArrayDecoder = (dataBuffer: Buffer) =>
-      orcaProgram.account.tickArray.coder.accounts.decode("TickArray", dataBuffer);
+    // const tickArrayDecoder = (dataBuffer: Buffer) =>
+    //   orcaProgram.account.tickArray.coder.accounts.decode("TickArray", dataBuffer);
 
     for (const poolConfig of orcaDexConfig.pools) {
       const poolSimulation: PoolSimulationParams = {
         programId: programPubkey,
         pool: new AutoUpdateAccountWithData<WhirlpoolData>(
           new PublicKey(poolConfig.pool),
-          this.connection,
+          this.connectionPool,
           whirlpoolDecoder,
         ),
         tokenA: poolConfig.tokenA,
@@ -136,46 +139,6 @@ export class OrcaDexSimulation extends DexSimulation {
         },
       };
 
-      const connection = this.connection;
-      poolSimulation.pool.registerOnUpdate(async () => {
-        const tickArrayIndexFunc = OrcaDexSimulation.getTickArrayIndicesFunc(
-          (poolSimulation.pool as AutoUpdateAccountWithData<WhirlpoolData>).get(),
-        );
-        const promiseList = [];
-        for (const index of [
-          tickArrayIndexFunc(-1),
-          tickArrayIndexFunc(0),
-          tickArrayIndexFunc(1),
-        ]) {
-          const tickArrayKey = tickArrayKeyByIndex(index);
-          if (!poolSimulation.watchedPoolAccounts[tickArrayKey]) {
-            poolSimulation.watchedPoolAccounts[tickArrayKey] =
-              new AutoUpdateAccountWithData<TickArrayData>(
-                OrcaDexSimulation.getTickArrayPDA(
-                  programPubkey,
-                  poolSimulation.pool.address,
-                  index,
-                ),
-                connection,
-                tickArrayDecoder,
-              );
-            promiseList.push(poolSimulation.watchedPoolAccounts[tickArrayKey].start());
-          }
-        }
-
-        for (const index of [tickArrayIndexFunc(-2), tickArrayIndexFunc(2)]) {
-          const tickArrayKey = tickArrayKeyByIndex(index);
-          if (!!poolSimulation.watchedPoolAccounts[tickArrayKey]) {
-            promiseList.push(
-              poolSimulation.watchedPoolAccounts[tickArrayKey].stop().then(() => {
-                poolSimulation.watchedPoolAccounts[tickArrayKey] = null;
-              }),
-            );
-          }
-        }
-        await Promise.all(promiseList);
-      });
-
       poolSimulationParamsList.push(poolSimulation);
     }
 
@@ -185,7 +148,54 @@ export class OrcaDexSimulation extends DexSimulation {
     };
   }
 
-  protected poolSimuluationGetAmountOut(
+  public async preCalculationUpdate(
+    connectionPool: ConnectionPool,
+    poolSimulationParams: PoolSimulationParams,
+    aToB: boolean,
+  ): Promise<PoolSimulationParams> {
+    const { programId, watchedPoolAccounts, pool } = poolSimulationParams;
+    const tickArrayIndexFunc = OrcaDexSimulation.getTickArrayIndicesFunc(
+      (poolSimulationParams.pool as AutoUpdateAccountWithData<WhirlpoolData>).get(),
+      aToB,
+    );
+
+    const tickArrayStartIndexList = aToB
+      ? [tickArrayIndexFunc(0), tickArrayIndexFunc(-1), tickArrayIndexFunc(-2)]
+      : [tickArrayIndexFunc(0), tickArrayIndexFunc(1), tickArrayIndexFunc(2)];
+
+    const orcaProgram = getProgram(WhirlpoolIdl as Idl, programId);
+    const tickArrayDecoder = (dataBuffer: Buffer) =>
+      orcaProgram.account.tickArray.coder.accounts.decode("TickArray", dataBuffer) as TickArrayData;
+
+    await Promise.all(
+      tickArrayStartIndexList.map(async (startIndex: number) => {
+        const tickArrayKey = tickArrayKeyByIndex(startIndex);
+        const tickArrayAddress = OrcaDexSimulation.getTickArrayPDA(
+          programId,
+          pool.address,
+          startIndex,
+        );
+        if (!watchedPoolAccounts[tickArrayKey]) {
+          watchedPoolAccounts[tickArrayKey] = new AutoUpdateAccountWithData<TickArray>(
+            tickArrayAddress,
+            connectionPool,
+            (data: Buffer) => ({
+              data: tickArrayDecoder(data),
+              address: tickArrayAddress,
+            }),
+          );
+        }
+        const tickArrayPoolAccounts = watchedPoolAccounts[
+          tickArrayKey
+        ] as AutoUpdateAccountWithData<TickArray>;
+        await tickArrayPoolAccounts.update();
+      }),
+    );
+
+    return poolSimulationParams;
+  }
+
+  private static poolSimuluationGetAmountOutInternal(
     poolSimulationParams: PoolSimulationParams,
     inAmount: anchor.BN,
     aToB: boolean,
@@ -194,7 +204,7 @@ export class OrcaDexSimulation extends DexSimulation {
       ? new anchor.BN("4295048016")
       : new anchor.BN("79226673515401279992447579055");
 
-    const { pool, watchedPoolAccounts, programId } = poolSimulationParams;
+    const { pool, programId, watchedPoolAccounts } = poolSimulationParams;
     const whirlpoolData = (pool as AutoUpdateAccountWithData<WhirlpoolData>).get();
 
     const tickArrayIndexFunc = OrcaDexSimulation.getTickArrayIndicesFunc(
@@ -202,29 +212,14 @@ export class OrcaDexSimulation extends DexSimulation {
       aToB,
     );
 
-    const tickArrayKey = tickArrayKeyByIndex(tickArrayIndexFunc(0));
-    const tickArrays = (
-      aToB
-        ? [
-            watchedPoolAccounts[tickArrayKey],
-            watchedPoolAccounts[tickArrayKeyByIndex(tickArrayIndexFunc(-1))] ||
-              watchedPoolAccounts[tickArrayKey],
-            watchedPoolAccounts[tickArrayKeyByIndex(tickArrayIndexFunc(-1))] ||
-              watchedPoolAccounts[tickArrayKey],
-          ]
-        : [
-            watchedPoolAccounts[tickArrayKey],
-            watchedPoolAccounts[tickArrayKeyByIndex(tickArrayIndexFunc(1))] ||
-              watchedPoolAccounts[tickArrayKey],
-            watchedPoolAccounts[tickArrayKeyByIndex(tickArrayIndexFunc(1))] ||
-              watchedPoolAccounts[tickArrayKey],
-          ]
-    ).map(
-      (tickArrayAccount: AutoUpdateAccountWithData<TickArrayData>): TickArray => ({
-        data: tickArrayAccount.get(),
-        address: tickArrayAccount.address,
-      }),
-    );
+    const tickArrayStartIndexList = aToB
+      ? [tickArrayIndexFunc(0), tickArrayIndexFunc(-1), tickArrayIndexFunc(-2)]
+      : [tickArrayIndexFunc(0), tickArrayIndexFunc(1), tickArrayIndexFunc(2)];
+
+    const tickArrays = tickArrayStartIndexList.map((startIndex) => {
+      const tickArrayKey = tickArrayKeyByIndex(startIndex);
+      return (watchedPoolAccounts[tickArrayKey] as AutoUpdateAccountWithData<TickArray>).get();
+    });
 
     const swapQuote = swapQuoteWithParams(
       {
@@ -242,19 +237,37 @@ export class OrcaDexSimulation extends DexSimulation {
     return swapQuote.estimatedAmountOut;
   }
 
+  protected poolSimuluationGetAmountOut(
+    poolSimulationParams: PoolSimulationParams,
+    inAmount: anchor.BN,
+    aToB: boolean,
+  ): anchor.BN {
+    return DexSimulation.outZeroOnFailure(
+      poolSimulationParams,
+      inAmount,
+      aToB,
+      OrcaDexSimulation.poolSimuluationGetAmountOutInternal,
+    );
+  }
+
   protected async poolSimulationArbInstruction(
     poolSimulationParams: PoolSimulationParams,
     aToB: boolean,
     payer: WalletWithTokenMap,
   ): Promise<TransactionInstruction> {
     const arbProgram = ArbProgram.getInstance();
-    const { pool, tokenA, tokenB, watchedPoolAccounts, txPoolAccounts } = poolSimulationParams;
+    const { programId, pool, tokenA, tokenB, txPoolAccounts } = poolSimulationParams;
     const poolData = (pool as AutoUpdateAccountWithData<WhirlpoolData>).get();
 
     const tickArrayIndexFunc = OrcaDexSimulation.getTickArrayIndicesFunc(poolData, aToB);
 
-    const tickArrayKey = tickArrayKeyByIndex(tickArrayIndexFunc(0));
-    const nextTickArrayKey = tickArrayKeyByIndex(tickArrayIndexFunc(1));
+    const tickArrayStartIndexList = aToB
+      ? [tickArrayIndexFunc(0), tickArrayIndexFunc(-1), tickArrayIndexFunc(-2)]
+      : [tickArrayIndexFunc(0), tickArrayIndexFunc(1), tickArrayIndexFunc(2)];
+
+    const [tickArray0, tickArray1, tickArray2] = tickArrayStartIndexList.map((startIndex: number) =>
+      OrcaDexSimulation.getTickArrayPDA(programId, pool.address, startIndex),
+    );
 
     return arbProgram.methods
       .orcaSwap(aToB)
@@ -266,13 +279,9 @@ export class OrcaDexSimulation extends DexSimulation {
         tokenVaultA: txPoolAccounts["tokenVaultA"],
         tokenOwnerAccountB: payer.getTokenAccountPubkey(tokenB),
         tokenVaultB: txPoolAccounts["tokenVaultB"],
-        tickArray0: watchedPoolAccounts[tickArrayKey].address,
-        tickArray1:
-          watchedPoolAccounts[nextTickArrayKey]?.address ||
-          watchedPoolAccounts[tickArrayKey].address,
-        tickArray2:
-          watchedPoolAccounts[nextTickArrayKey]?.address ||
-          watchedPoolAccounts[tickArrayKey].address,
+        tickArray0,
+        tickArray1,
+        tickArray2,
         oracle: txPoolAccounts["oracle"],
         swapState: ArbSwapStatePDA.getInstance(),
         orcaSwapProgram: poolSimulationParams.programId,

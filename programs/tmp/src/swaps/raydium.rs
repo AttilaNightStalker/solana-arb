@@ -1,9 +1,9 @@
 use anchor_lang::prelude::*;
-use solana_program::instruction::{AccountMeta, Instruction};
-use solana_program;
 use anchor_spl::token::TokenAccount;
 use anchor_lang::Accounts;
 use crate::state::SwapState;
+use raydium_amm_v3::amm_v3::cpi::accounts::SwapSingle;
+use raydium_amm_v3::amm_v3::cpi::swap;
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 struct RaydiumSwapData {
@@ -18,59 +18,25 @@ pub fn _raydium_swap<'info>(
     amount_in: u64,
     a_to_b: bool,
 ) -> Result<()> {
-
-    let data = RaydiumSwapData {
-        amount: amount_in,
-        other_amount_threshold: 0u64, // no saftey lmfao 
-        sqrt_price_limit_x64: 0u128,
-        is_base_input: a_to_b,
-    };
     
-    let mut ix_accounts = vec![
-        AccountMeta::new(*ctx.accounts.payer.key, true),
-
-        AccountMeta::new_readonly(*ctx.accounts.amm_config.key, false),
-        AccountMeta::new(*ctx.accounts.pool_state.key, true),
-        
-        AccountMeta::new(ctx.accounts.user_src.key(), false),
-        AccountMeta::new(ctx.accounts.user_dst.key(), false),
-        AccountMeta::new(ctx.accounts.input_vault.key(), false),
-        AccountMeta::new(ctx.accounts.output_vault.key(), false),
-        AccountMeta::new(*ctx.accounts.observation_state.key, false),
-        AccountMeta::new(*ctx.accounts.token_program.key, false),
-
-        AccountMeta::new(*ctx.accounts.tick_array.key, false),
-    ];
-
-    for tick_array_info in ctx.remaining_accounts {
-        ix_accounts.push(AccountMeta::new(*tick_array_info.key, false));
-    }
-
-    let instruction = Instruction {
-        program_id: *ctx.accounts.raydium_swap_program.key,
-        accounts: ix_accounts,
-        data: data.try_to_vec()?,
+    let cpi_program = ctx.accounts.raydium_swap_program.to_account_info();
+    let cpi_accounts = SwapSingle {
+        payer: ctx.accounts.payer.to_account_info(),
+        amm_config: ctx.accounts.amm_config.to_account_info(),
+        pool_state: ctx.accounts.pool_state.to_account_info(),
+        input_token_account: ctx.accounts.user_src.to_account_info(),
+        output_token_account: ctx.accounts.user_dst.to_account_info(),
+        input_vault: ctx.accounts.input_vault.to_account_info(),
+        output_vault: ctx.accounts.output_vault.to_account_info(),
+        observation_state: ctx.accounts.observation_state.to_account_info(),
+        token_program: ctx.accounts.token_program.to_account_info(),
+        tick_array: ctx.accounts.tick_array.to_account_info(),
     };
-
-    let accounts = vec![
-        ctx.accounts.payer.to_account_info(),
-        ctx.accounts.amm_config.to_account_info(),
-        ctx.accounts.pool_state.to_account_info(),
-        ctx.accounts.user_src.to_account_info(),
-        ctx.accounts.user_dst.to_account_info(),
-        ctx.accounts.input_vault.to_account_info(),
-        ctx.accounts.output_vault.to_account_info(),
-        ctx.accounts.observation_state.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.tick_array.to_account_info()
-    ];
-
-    solana_program::program::invoke(
-        &instruction, 
-        &accounts, 
-    )?;
-
-    Ok(())
+    let mut cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+    for tick_array_info in ctx.remaining_accounts {
+        cpi_ctx.remaining_accounts.push(tick_array_info.clone());
+    }
+    swap(cpi_ctx, amount_in, 0u64, 0u128, a_to_b)
 }
 
 #[derive(Accounts, Clone)]

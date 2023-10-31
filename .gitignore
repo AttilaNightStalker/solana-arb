@@ -7,4 +7,5 @@ node_modules
 test-ledger
 .yarn
 app/3rdparty
+app/tmp
 Cargo.lock

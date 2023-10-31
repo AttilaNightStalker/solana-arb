@@ -181,6 +181,14 @@
           "isSigner": false
         },
         {
+          "name": "tickArrayBitmap",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "Initialize an account to store if a tick array is initialized."
+          ]
+        },
+        {
           "name": "tokenProgram0",
           "isMut": false,
           "isSigner": false,
@@ -2867,6 +2875,52 @@
           }
         ]
       }
+    },
+    {
+      "name": "TickArrayBitmapExtension",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "poolId",
+            "type": "publicKey"
+          },
+          {
+            "name": "positiveTickArrayBitmap",
+            "docs": [
+              "Packed initialized tick array state for start_tick_index is positive"
+            ],
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u64",
+                    8
+                  ]
+                },
+                14
+              ]
+            }
+          },
+          {
+            "name": "negativeTickArrayBitmap",
+            "docs": [
+              "Packed initialized tick array state for start_tick_index is negitive"
+            ],
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u64",
+                    8
+                  ]
+                },
+                14
+              ]
+            }
+          }
+        ]
+      }
     }
   ],
   "types": [
@@ -3879,6 +3933,11 @@
       "code": 6039,
       "name": "NotSupportMint",
       "msg": "Not support token_2022 mint extension"
+    },
+    {
+      "code": 6040,
+      "name": "MissingTickArrayBitmapExtensionAccount",
+      "msg": "Missing tickarray bitmap extension account"
     }
   ]
 }

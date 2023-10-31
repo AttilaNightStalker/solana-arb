@@ -9,14 +9,17 @@ import {
 import { PathLike, promises } from "fs";
 import { UpdateEventEmitter } from "../singletons";
 import { WalletWithTokenMap } from "../utils";
+import { ConnectionPool } from "../connectionPool";
+import { BN } from "bn.js";
 
 /**
  * auto update account (abstract)
  */
 abstract class AutoUpdateAccount {
   readonly address: PublicKey;
-  protected connection: Connection;
-  protected subscribeId: number;
+  protected connectionPool: ConnectionPool;
+  protected subscribeId: number = null;
+  protected subscribeWssId: number = null;
   protected onUpdateCallbacks: (() => any)[];
 
   abstract start(): Promise<void>;
@@ -25,9 +28,9 @@ abstract class AutoUpdateAccount {
     this.onUpdateCallbacks.push(onUpdate);
   }
 
-  constructor(address: string | PublicKey, connection: Connection) {
+  constructor(address: string | PublicKey, connectionPool: ConnectionPool) {
     this.address = new PublicKey(address);
-    this.connection = connection;
+    this.connectionPool = connectionPool;
     this.subscribeId = -1;
     this.onUpdateCallbacks = [];
   }
@@ -45,10 +48,12 @@ export class AutoUpdateAccountWithData<T> extends AutoUpdateAccount {
       return;
     }
 
-    this.accountData = this.decoder((await this.connection.getAccountInfo(this.address))?.data);
+    await this.update();
     await Promise.all(this.onUpdateCallbacks.map((callback) => callback()));
 
-    this.subscribeId = this.connection.onAccountChange(
+    const { element: wssConnection, index: subWssIndex } = this.connectionPool.getWssConnection();
+    this.subscribeWssId = subWssIndex;
+    this.subscribeId = wssConnection.onAccountChange(
       this.address,
       (accountInfo: AccountInfo<Buffer>, _context: Context) => {
         this.accountData = this.decoder(accountInfo.data);
@@ -57,12 +62,20 @@ export class AutoUpdateAccountWithData<T> extends AutoUpdateAccount {
     );
   }
 
+  async update(): Promise<void> {
+    const { element: httpsConnection } = this.connectionPool.getHttpsConnection();
+    this.accountData = this.decoder((await httpsConnection.getAccountInfo(this.address))?.data);
+  }
+
   async stop(): Promise<void> {
     if (this.subscribeId === -1) {
       return;
     }
-    await this.connection.removeAccountChangeListener(this.subscribeId);
-    this.subscribeId = -1;
+    await this.connectionPool
+      .getWssConnection(this.subscribeWssId)
+      .element.removeAccountChangeListener(this.subscribeId);
+    this.subscribeId = null;
+    this.subscribeWssId = null;
     return;
   }
 
@@ -70,8 +83,12 @@ export class AutoUpdateAccountWithData<T> extends AutoUpdateAccount {
     return this.accountData;
   }
 
-  constructor(address: string | PublicKey, connection: Connection, decoder: (data: Buffer) => T) {
-    super(address, connection);
+  constructor(
+    address: string | PublicKey,
+    connectionPool: ConnectionPool,
+    decoder: (data: Buffer) => T,
+  ) {
+    super(address, connectionPool);
     this.decoder = decoder;
   }
 }
@@ -169,6 +186,7 @@ export class PoolSimulation {
  * Arb path node
  */
 export type ArbPathNode = {
+  poolId: string;
   fromToken: string;
   toToken: string;
   getAmountOut: (amountIn: anchor.BN) => anchor.BN;
@@ -183,7 +201,8 @@ export type parsedDexConfig = {
 };
 
 export abstract class DexSimulation {
-  protected connection: Connection;
+  abstract name: string;
+  protected connectionPool: ConnectionPool;
   protected programId: PublicKey;
   protected poolSimulations: PoolSimulation[];
   protected tokenPairs: Record<string, string[]>;
@@ -192,6 +211,12 @@ export abstract class DexSimulation {
   protected constantWatchingAccount: string[];
 
   protected abstract loadAndInitializeDexConfig(dexConfigPath: PathLike): parsedDexConfig;
+  protected abstract preCalculationUpdate(
+    connectionPool: ConnectionPool,
+    poolSimulationParams: PoolSimulationParams,
+    aToB: boolean,
+  ): Promise<PoolSimulationParams>;
+
   protected abstract poolSimuluationGetAmountOut(
     poolSimulationParams: PoolSimulationParams,
     inAmount: anchor.BN,
@@ -203,11 +228,36 @@ export abstract class DexSimulation {
     payer: WalletWithTokenMap,
   ): Promise<TransactionInstruction>;
 
-  public async getArbPaths(
-    fromToken: string,
-    toToken: string,
-    payer: WalletWithTokenMap,
-  ): Promise<ArbPathNode[]> {
+  protected static outZeroOnFailure(
+    poolSimulationParams: PoolSimulationParams,
+    inAmount: anchor.BN,
+    aToB: boolean,
+    calculateOutFunc: (
+      poolSimulationParams: PoolSimulationParams,
+      inAmount: anchor.BN,
+      aToB: boolean,
+    ) => anchor.BN,
+  ) {
+    if (inAmount.eq(new BN(0))) {
+      return new BN(0);
+    }
+    try {
+      return calculateOutFunc(poolSimulationParams, inAmount, aToB);
+    } catch (e) {
+      const { programId, tokenA, tokenB } = poolSimulationParams;
+      console.log(
+        `error occured at ${JSON.stringify({ programId, tokenA, tokenB, name: this.name })}`,
+      );
+      console.error(e);
+    }
+    return new anchor.BN(0);
+  }
+
+  public getPairedTokens(fromTokenSymbol: string): string[] {
+    return this.tokenPairs[fromTokenSymbol] || [];
+  }
+
+  public getArbPaths(fromToken: string, toToken: string, payer: WalletWithTokenMap): ArbPathNode[] {
     if (!payer.getTokenAccountPubkey(fromToken) || !payer.getTokenAccountPubkey(toToken)) {
       console.warn(`${fromToken}-${toToken} is not available for wallet ${payer.publicKey}`);
       return [];
@@ -217,6 +267,7 @@ export abstract class DexSimulation {
     const poolSimulationsAtoB = this.tokenPairToPoolSimulations[`${fromToken}-${toToken}`] || [];
     for (const poolSimulation of poolSimulationsAtoB) {
       result.push({
+        poolId: poolSimulation.poolSimulationParams.pool.address.toString(),
         fromToken,
         toToken,
         getAmountOut: (amountIn: anchor.BN) => poolSimulation.getAmountOut(amountIn, true),
@@ -230,6 +281,7 @@ export abstract class DexSimulation {
     const poolSimulationsBtoA = this.tokenPairToPoolSimulations[`${toToken}-${fromToken}`] || [];
     for (const poolSimulation of poolSimulationsBtoA) {
       result.push({
+        poolId: poolSimulation.poolSimulationParams.pool.address.toString(),
         fromToken,
         toToken,
         getAmountOut: (amountIn: anchor.BN) => poolSimulation.getAmountOut(amountIn, false),
@@ -243,8 +295,8 @@ export abstract class DexSimulation {
     return result;
   }
 
-  constructor(connection: Connection, poolConfigPath: PathLike) {
-    this.connection = connection;
+  constructor(connectionPool: ConnectionPool, poolConfigPath: PathLike) {
+    this.connectionPool = connectionPool;
     this.tokenPairs = {};
     this.tokenPairToPoolSimulations = {};
 

@@ -7,7 +7,7 @@
             "tokenB": "USDT",
             "tokenVaultA": "4oY1eVHJrt7ywuFoQnAZwto4qcQip1QhYMAhD11PU4QL",
             "tokenVaultB": "4dSG9tKHZR4CAictyEnH9XuGZyKapodWXq5xyg7uFwE9",
-            "oracle": "4fuUiYxTQ6QCrdSq9ouBYcTM7bqSwYTSyLueGZLTy4T4"
+            "oracle": "3NxDBWt55DZnEwwQ2bhQ3xWG8Jd18TdUXAG4Zdr7jDai"
         },
         {
             "pool": "7qbRF6YsyGuLUVs6Y1q64bdVrfe4ZcUUz1JRdoVNUJnm",
@@ -18,12 +18,20 @@
             "oracle": "6vK8gSiRHSnZzAa5JsvBF2ej1LrxpRX21Y185CzP4PeA"
         },
         {
-            "pool": "9r5v3ZTSZaRkRANZ5PSxh32ry4udrvtYmxypQG3XJbqN",
-            "tokenA": "UXP",
+            "pool": "HJPjoWUrhoZzkNfRpHuieeFk9WcZWjwy6PBjZ81ngndJ",
+            "tokenA": "SOL",
             "tokenB": "USDC",
-            "tokenVaultA": "AVCVCaEvr2HjgrJt6r4SSrTPktcLpYwQjxhDdhcWskjD",
-            "tokenVaultB": "Ct4LVGgnR1p5aV2Xq3yWowLitKtsEyE9L7MVAH557J9q",
-            "oracle": "9r5v3ZTSZaRkRANZ5PSxh32ry4udrvtYmxypQG3XJbqN"
+            "tokenVaultA": "3YQm7ujtXWJU2e9jhp2QGHpnn1ShXn12QjvzMvDgabpX",
+            "tokenVaultB": "2JTw1fE2wz1SymWUQ7UqpVtrTuKjcd6mWwYwUJUCh2rq",
+            "oracle": "4GkRbcYg1VKsZropgai4dMf2Nj2PkXNLf43knFpavrSi"
+        },
+        {
+            "pool": "FpCMFDFGYotvufJ7HrFHsWEiiQCGbkLCtwHiDnh7o28Q",
+            "tokenA": "SOL",
+            "tokenB": "USDC",
+            "tokenVaultA": "6mQ8xEaHdTikyMvvMxUctYch6dUjnKgfoeib2msyMMi1",
+            "tokenVaultB": "AQ36QRk3HAe6PHqBCtKTQnYKpt2kAagq9YoeTqUPMGHx",
+            "oracle": "923j69hYbT5Set5kYfiQr1D8jPL6z15tbfTbVLSwUWJD"
         },
         {
             "pool": "GLNvG5Ly4cK512oQeJqnwLftwfoPZ4skyDwZWzxorYQ9",
@@ -32,6 +40,14 @@
             "tokenVaultA": "AzrRewYSJPSMFxf5WxSoTWw1mxqaPQtVgRmsBaPgQZ7B",
             "tokenVaultB": "2i4Dew7vLcTPDHTQF3Wska1CrsWaqNj99xuDvxJVvM8x",
             "oracle": "C5Fhtw7VLawwt2ZM4woBXGh5QqRWRs9Dcvdx4V543CNu"
+        },
+        {
+            "pool": "Fvtf8VCjnkqbETA6KtyHYqHm26ut6w184Jqm4MQjPvv7",
+            "tokenA": "USDH",
+            "tokenB": "USDC",
+            "tokenVaultA": "4WuB7EYM6N42583EnFkWPusbWUZB5X9ESErUU5gQ5dra",
+            "tokenVaultB": "GHQjuFa7XY4GXPYHZ1cWtkqcCqxMQ6eNt4op7dhaVnSd",
+            "oracle": "3x9StJDG1SQfNok8sEc6TNdcF7eu1rcnGXTQA9QBP7Nz"
         }
     ]
 }

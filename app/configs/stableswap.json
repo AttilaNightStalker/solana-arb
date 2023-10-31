@@ -5,7 +5,7 @@
             "tokenA": "USDC",
             "tokenB": "USDT",
             "swapAccount": "YAkoNb6HKmSxQN9L8hiBE5tPJRsniSSMzND1boHmZxe",
-            "authority": "YAkoNb6HKmSxQN9L8hiBE5tPJRsniSSMzND1boHmZxe",
+            "authority": "5C1k9yV7y4CjMnKv8eGYDgWND8P89Pdfj79Trk2qmfGo",
             "poolTokenA": "CfWX7o2TswwbxusJ4hCaPobu2jLCb1hfXuXJQjVq3jQF",
             "poolTokenB": "EnTrdMMpdhugeH6Ban6gYZWXughWxKtVGfCwFn78ZmY3",
             "adminTokenA": "XZuQG7CQrAA6y6tHM9CLrDjDUWwuUU2SBoV7pLaGDQT",
@@ -14,15 +14,27 @@
             "lpDecimals": 6
         },
         {
-            "tokenA": "USDC",
-            "tokenB": "UXD",
+            "tokenA": "UXD",
+            "tokenB": "USDC",
             "swapAccount": "KEN5P7p3asnb23Sw6yAmJRGvijfAzso3RqfyLAQhznt",
             "authority": "HaNqpJUQeH2t6SB3tDJAtKV52fJM9rV1mGZrRrqMRZo1",
-            "poolTokenA": "CwQDG1MWunn9cLNwcZLd8YBacweSR7ARo32w4mLua1Yr",
-            "poolTokenB": "9zj4aX38Uxf3h6AUjS4EipWS8mwbEofasHAf3a1uKGds",
-            "adminTokenA": "5BEZbHQMLGyLsVTG77UoJqNsuF7PJUfeNmxwDfe6v4jy",
-            "adminTokenB": "3czPMjjuHNb1yAahyQVmGiN7AQAGaws8xpFcSskCj2oe",
+            "poolTokenA": "9zj4aX38Uxf3h6AUjS4EipWS8mwbEofasHAf3a1uKGds",
+            "poolTokenB": "CwQDG1MWunn9cLNwcZLd8YBacweSR7ARo32w4mLua1Yr",
+            "adminTokenA": "3czPMjjuHNb1yAahyQVmGiN7AQAGaws8xpFcSskCj2oe",
+            "adminTokenB": "5BEZbHQMLGyLsVTG77UoJqNsuF7PJUfeNmxwDfe6v4jy",
             "lpMint": "UXDgmqLd1roNYkC4TmJzok61qcM9oKs5foDADiFoCiJ",
+            "lpDecimals": 6
+        },
+        {
+            "tokenA": "USDH",
+            "tokenB": "USDC",
+            "swapAccount": "MARpDPs5A7XiyCWPNH8GsMWPLxmwNn9SBmKvPa9LzgA",
+            "authority": "H66xGa3c5wvg5ZGF7RCwskf52iH42C8u8v8TPwQXwc3m",
+            "poolTokenA": "6YjT74rmcfCpw8LSjPNx5JTmZoYLGrTKnf9arfSgZ4SR",
+            "poolTokenB": "F8GSmi3vA8M8TsybLya1LQ4n1aFHCRbZ6k437PeTdXtg",
+            "adminTokenA": "EtjTwkeqBHoX9s9PVeDszVSFkmaSY6nsfRtDzoqc3c5U",
+            "adminTokenB": "9fLmntYbe6E4CP1A23NMSZSpzfWx7HASybaNfAQ8GTXt",
+            "lpMint": "HUBBGekfLpdZhZcqjLeecLVz39o1ysDkicZpgMgZgPFS",
             "lpDecimals": 6
         }
     ]

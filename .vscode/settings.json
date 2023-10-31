@@ -1,0 +1,5 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "./lib_rs/raydium_client/Cargo.toml"
+    ]
+}

@@ -1,10 +1,10 @@
 use anchor_lang::prelude::*;
-use solana_program::instruction::{AccountMeta, Instruction};
 use solana_program;
 use anchor_spl::token::TokenAccount;
 
 use anchor_lang::Accounts;
 use crate::state::SwapState;
+use whirlpool::whirlpool::cpi::{accounts::Swap, swap};
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 struct OrcaSwapData {
@@ -21,56 +21,22 @@ pub fn _orca_swap<'info>(
     a_to_b: bool,
 ) -> Result<()> {
     
-    let data = OrcaSwapData {
-        amount: amount_in,
-        other_amount_threshold: 0u64, // no saftey lmfao 
-        sqrt_price_limit: if a_to_b { 4295048016u128 } else { 79226673515401279992447579055u128 },
-        amount_specified_is_input: true,
-        a_to_b,
+    let cpi_program = ctx.accounts.whirlpool.to_account_info();
+    let cpi_accounts = Swap {
+        token_program: ctx.accounts.token_program.to_account_info(),
+        token_authority: ctx.accounts.token_authority.to_account_info(),
+        whirlpool: ctx.accounts.whirlpool.to_account_info(),
+        token_owner_account_a: ctx.accounts.token_owner_account_a.to_account_info(),
+        token_vault_a: ctx.accounts.token_vault_a.to_account_info(),
+        token_owner_account_b: ctx.accounts.token_owner_account_b.to_account_info(),
+        token_vault_b: ctx.accounts.token_vault_b.to_account_info(),
+        tick_array_0: ctx.accounts.tick_array_0.to_account_info(),
+        tick_array_1: ctx.accounts.tick_array_1.to_account_info(),
+        tick_array_2: ctx.accounts.tick_array_2.to_account_info(),
+        oracle: ctx.accounts.oracle.to_account_info(),
     };
-
-    let ix_accounts = vec![
-        AccountMeta::new_readonly(*ctx.accounts.token_program.key, false),
-        AccountMeta::new_readonly(*ctx.accounts.token_authority.key, true),
-
-        AccountMeta::new(*ctx.accounts.whirlpool.key, false),
-        AccountMeta::new(ctx.accounts.token_owner_account_a.key(), false),
-        AccountMeta::new(ctx.accounts.token_vault_a.key(), false),
-        AccountMeta::new(ctx.accounts.token_owner_account_b.key(), false),
-        AccountMeta::new(ctx.accounts.token_vault_b.key(), false),
-        AccountMeta::new(ctx.accounts.tick_array_0.key(), false),
-        AccountMeta::new(ctx.accounts.tick_array_1.key(), false),
-        AccountMeta::new(ctx.accounts.tick_array_2.key(), false),
-      
-        AccountMeta::new_readonly(*ctx.accounts.oracle.key, false),
-    ];
-
-    let instruction = Instruction {
-        program_id: *ctx.accounts.token_program.key,
-        accounts: ix_accounts,
-        data: data.try_to_vec()?,
-    };
-
-    let accounts = vec![
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.token_authority.to_account_info(),
-        ctx.accounts.whirlpool.to_account_info(),
-        ctx.accounts.token_owner_account_a.to_account_info(),
-        ctx.accounts.token_vault_a.to_account_info(),
-        ctx.accounts.token_owner_account_b.to_account_info(),
-        ctx.accounts.token_vault_b.to_account_info(),
-        ctx.accounts.tick_array_0.to_account_info(),
-        ctx.accounts.tick_array_1.to_account_info(),
-        ctx.accounts.tick_array_2.to_account_info(),
-        ctx.accounts.oracle.to_account_info(),
-    ];
-
-    solana_program::program::invoke(
-        &instruction, 
-        &accounts, 
-    )?;
-    
-    Ok(())
+    let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+    swap(cpi_ctx, amount_in, 0u64, if a_to_b { 4295048016u128 } else { 79226673515401279992447579055u128 }, true, a_to_b)
 }
 
 #[derive(Accounts)]

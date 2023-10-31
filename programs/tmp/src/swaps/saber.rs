@@ -21,7 +21,7 @@ pub fn _saber_swap<'info>(
         AccountMeta::new(*ctx.accounts.pool_account.key, false),
 
         AccountMeta::new_readonly(*ctx.accounts.authority.key, false),
-        AccountMeta::new_readonly(*ctx.accounts.user_transfer_authority.key, true),
+        AccountMeta::new(*ctx.accounts.user_transfer_authority.key, true),
         
         AccountMeta::new(ctx.accounts.user_src.key(), false),
         AccountMeta::new(*ctx.accounts.pool_src.key, false),

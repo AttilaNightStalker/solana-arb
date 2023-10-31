@@ -9,7 +9,7 @@ import {
   WALLET_KEY_PAIR_PATH,
 } from "./constant";
 import { loadKeypairFromPath } from "./utils";
-import TmpIdl from "./idl/tmp.json";
+import TmpIdl from "../idl/tmp.json";
 
 export class UpdateEventEmitter extends EventEmitter {
   private static instance: UpdateEventEmitter;
@@ -20,6 +20,7 @@ export class UpdateEventEmitter extends EventEmitter {
   public static getInstance() {
     if (!UpdateEventEmitter.instance) {
       UpdateEventEmitter.instance = new UpdateEventEmitter();
+      UpdateEventEmitter.instance.setMaxListeners(1000000);
     }
     return UpdateEventEmitter.instance;
   }
